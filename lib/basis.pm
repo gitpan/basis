@@ -1,20 +1,31 @@
-
-; package basis
+  package basis
 ; use base 'base'
 ; use Sub::Uplevel
 
-; our $VERSION = '0.01'
+; our $VERSION = '0.03'
 
 ; sub import
     { shift()
-	; my @basis=@_
-	; my $return = uplevel(1,\&base::import,'base',@basis)
-	; foreach ( @basis )
-	    { my $import = $_->can('import') 
-		; uplevel( 1, $import , $_ ) if $import 
-		}
-	; $return
-	}
+    ; my @basis=@_
+    ; my $return = uplevel(1,\&base::import,'base',@basis)
+    # this checks if the above works, which is not the case
+    # if Sub::Uplevel was loaded to late
+    # it is better to die if this not work
+    ; my $inheritor=caller(0)
+    ; foreach ( @basis )
+        { next if $inheritor->isa($_) 
+        ; require Carp;
+        ; Carp::croak(<<ERROR)
+'basis' was not able to setup the base class '$_' for '$inheritor'.
+Maybe Sub::Uplevel was loaded to late for your script.   
+ERROR
+        }
+    ; foreach ( @basis )
+        { my $import = $_->can('import') 
+        ; uplevel( 1, $import , $_ ) if $import 
+        }
+    ; $return
+    }
 
 ; 1
 
@@ -26,7 +37,7 @@ basis - use base with import call
 
 =head1 VERSION
 
-Version 0.01
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -45,20 +56,16 @@ It uses Sub::Uplevel to do the construct
 	  bal->import;
   };
 
-or the other way around
-
-   use base qw/Foo bal/;
-   use Foo; use bal;
-   
-
 transparently for the parent and child class.
-	
+
 =head1 IMPORTANT NOTE
 
 The call of Sub::Uplevel might come to late, so the uplevel call will not work
 If you use this module, the same rule as for Sub::Uplevel applies:
 
 Use Sub::Uplevel as early as possible in your program.
+
+Now this modul croaks when Sub::Uplevel is not used earlier enough.
 	
 =head1 AUTHOR
 

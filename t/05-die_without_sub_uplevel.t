@@ -1,10 +1,9 @@
 #!/usr/bin/perl
 
-; use Sub::Uplevel
 ; use strict
 ; package main
 
-; use Test::More tests => 5
+; use Test::More tests => 2
 
 ; BEGIN { use_ok( 'basis' ) }
 
@@ -17,14 +16,14 @@
 
 ; sub import { $My::Base::v="i" }
 
+my $error1
 ; package My::Shoe
-; use basis 'My::Base'
-
+; BEGIN { eval "use basis 'My::Base'" 
+        ; $error1=$@
+        }
 ; package main
 
-; use Data::Dumper
+; my $expect=qr/'basis' was not able to setup the base class 'My::Base' for 'My::Shoe'/
 
-; is($My::Base::VERSION, "-1, set by base.pm")
-; ok(! My::Shoe->isa("Sub::Uplevel"))
-; ok(My::Shoe->isa("My::Base") , "isa")
-; is($My::Base::v , "i"        , "import call")
+; like($error1,$expect)
+
