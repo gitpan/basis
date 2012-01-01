@@ -1,11 +1,26 @@
   package basis
-; use base 'base'
+; our $base
+; BEGIN 
+    { unless($base)
+        { for my $realbase (qw(parent base))
+	    { eval "require $realbase"
+            ; unless($@)
+                { $base = $realbase
+		; last
+                }
+            }
+	; unless($base)
+            { die "Perl pragma parent/base not loadable."
+            } 
+        }  
+    }
 ; use Sub::Uplevel 0.12 # 0.9 does not, 0.10/0.11 ?
 
-; our $VERSION = '0.04'
+; our $VERSION = '0.05'
 
 ; sub import
     { shift()
+    ; return unless @_
     ; my @basis=@_
 
     # filter argument arrays
@@ -18,8 +33,9 @@
 	    { $args{$basis[$i]}=[]
 	    }
 	}
-
-    ; my $return = uplevel(1,\&base::import,'base',@basis)
+    ; my $builder = $base->can('import')
+    ; my $return = uplevel(1, $builder, $base, @basis)
+    ; shift @basis if $basis[0] eq '-norequire'
     # this checks if the above works, which is not the case
     # if Sub::Uplevel was loaded to late
     # it is better to die if this not works
@@ -28,7 +44,7 @@
         { next if $inheritor->isa($_) 
         ; require Carp;
         ; Carp::croak(<<ERROR)
-'basis' was not able to setup the base class '$_' for '$inheritor'.
+'basis' via '$base' was not able to setup the base class '$_' for '$inheritor'.
 Maybe Sub::Uplevel was loaded to late for your script.   
 ERROR
         }
@@ -49,18 +65,18 @@ basis - use base with import call
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
-Similar to base:
+Usage is similar to L<base> or L<parent>:
     
     package Baz;
-    use basis qw/Foo bal/;
-	
+    use basis qw/Foo bar/;
+
 Or with arguments for import:
 
-    package Foob;
+    package Foo;
     use basis Bary => [go => "away"];
 
 =head1 DESCRIPTION
@@ -76,44 +92,52 @@ It uses Sub::Uplevel to do the construct
 transparently for the parent and child class.
 
 If the classname is followed by a array reference, than
-the dereferenced array is used in the import
-call as argument.
+the dereferenced array is used in the import call as argument.
+
+Now it uses the C<import> method from the class named in the
+global variable C<$basis::base>. When not set from outside, this
+variable will be set during the first load of this module. It
+defaults to C<parent> and as second alternative to C<base>.
 
 =head1 IMPORTANT NOTE
 
-The call of Sub::Uplevel might come to late, so the uplevel call will not work
-If you use this module, the same rule as for Sub::Uplevel applies:
+The call of Sub::Uplevel might come to late, so C<uplevel> 
+will not work as expected. If you use this module, the same rule 
+as for Sub::Uplevel applies:
 
 Use Sub::Uplevel as early as possible in your program.
 
-Now this modul croaks when Sub::Uplevel is not used earlier enough.
+Now this module croaks when Sub::Uplevel is not used earlier enough.
 	
 =head1 AUTHOR
 
-Sebastian Knapp, C<< <sk at computer-leipzig.com> >>
+Sebastian Knapp, C<< <rock@ccls-online.de> >>
 
 =head1 BUGS
 
 Please report any bugs or feature requests to
 C<bug-basis at rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=basis>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
+I will be notified, and then you will automatically be notified 
+of progress on your bug as I make changes.
 
-=head1 ACKNOWLEDGEMENTS
+=head1 ACKNOWLEDGMENT
 
 Thank you Michael G. Schwern for base and Sub::Uplevel. I hope this tiny 
-addon finds your blessing. Thank you David A Golden for maintenance and
+add-on finds your blessing. Thank you David A Golden for maintenance and
 improvement of Sub::Uplevel.
 	
 =head1 SEE ALSO
 
 L<Sub::Uplevel>
+
 L<base>
+
+L<parent>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Computer-Leipzig, all rights reserved.
+Copyright 2006,2011 Computer-Leipzig, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

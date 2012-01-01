@@ -2,14 +2,12 @@
 
 ; use Sub::Uplevel
 ; use strict
+; use warnings
 ; package main
 
 ; use Test::More tests => 5
 
 ; BEGIN { use_ok( 'basis' ) }
-
-; diag( "Testing basis $basis::VERSION, Perl $], $^X" )
-
 ########################################################
 # Test with inline classes
 
@@ -21,19 +19,16 @@ SKIP: {
     package main;
     local $basis::base = $basis::base;
     BEGIN 
-        { eval "require base"
-        ; skip("base specific test",4) if $@
-        ; $basis::base = 'base'
+        { eval "require parent"
+        ; skip("parent specific test",4) if $@
+        ; $basis::base = 'parent'
         }
     ; package My::Shoe
-    ; use basis 'My::Base'
+    ; use basis -norequire => 'My::Base'
 
     ; package main
-
-    ; use Data::Dumper
-
-    ; is($My::Base::VERSION, "-1, set by base.pm")
     ; ok(! My::Shoe->isa("Sub::Uplevel"))
+    ; ok(! My::Shoe->isa("parent"))
     ; ok(My::Shoe->isa("My::Base") , "isa")
     ; is($My::Base::v , "i"        , "import call")
     }
